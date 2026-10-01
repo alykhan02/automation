@@ -1,0 +1,7 @@
+{
+  "layout": "callout",
+  "photo": "assets/photos/clipboard-on-grass.jpg",
+  "headline": ["Looking to", "volunteer for", "Gold Cup U12?"],
+  "sub": ["Join as a coach, site", "lead or site volunteer!"],
+  "button": { "text": "Sign up using the link in bio!", "icon": "cursor-click" }
+}

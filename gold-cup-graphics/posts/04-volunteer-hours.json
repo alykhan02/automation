@@ -1,0 +1,11 @@
+{
+  "layout": "callout",
+  "photo": "assets/photos/clipboard-on-grass.jpg",
+  "photoFlip": true,
+  "photoZoom": 1.45,
+  "photoFocus": "50% 0%",
+  "kicker": "High school students",
+  "headline": ["Need your", "volunteer", "hours?"],
+  "sub": ["Earn them with Gold Cup U12", "every Sunday until Nov 22!"],
+  "button": { "text": "Sign up using the link in bio!", "icon": "cursor-click" }
+}

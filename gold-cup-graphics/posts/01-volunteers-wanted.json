@@ -1,9 +1,9 @@
 {
-  "photo": "assets/photos/cleat-and-ball.jpg",
-  "photoFlip": true,
+  "layout": "info",
+  "pattern": { "type": "pitch", "angle": -18, "x": 78, "y": 62 },
   "kicker": "Gold Cup U12",
   "headline": ["Volunteers", "Wanted"],
-  "tagline": "Join our team!",
+  "sub": "Join our team!",
   "pills": [
     { "icon": "calendar-days", "lines": ["Weekly sessions from", "Oct 17/18 - Nov 22"] },
     { "icon": "location-dot", "lines": ["4 locations across", "Ontario"] },

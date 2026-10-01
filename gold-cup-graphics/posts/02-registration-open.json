@@ -1,14 +1,8 @@
 {
-  "photo": "assets/photos/cleat-and-ball.jpg",
-  "photoZoom": 1.25,
-  "photoFocus": "100% 60%",
+  "layout": "callout",
+  "pattern": { "type": "net", "x": 55, "y": 22 },
   "kicker": "Gold Cup U12",
-  "headline": ["Registration", "is now open"],
-  "tagline": "Don’t miss out!",
-  "pills": [
-    { "icon": "calendar-days", "lines": ["Every Sunday, from", "Oct 18 - Nov 22"] },
-    { "icon": "location-dot", "lines": ["4 locations across", "Ontario"] },
-    { "icon": "trophy", "lines": ["Come together for a", "final showcase"] }
-  ],
-  "cta": ["Register via", "link in bio!"]
+  "headline": ["Registration", "is now open!"],
+  "sub": ["Every Sunday, Oct 18 - Nov 22", "at 4 locations across Ontario"],
+  "button": { "text": "Register using the link in bio!", "icon": "cursor-click" }
 }

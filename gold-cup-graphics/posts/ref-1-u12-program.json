@@ -2,7 +2,7 @@
   "photo": "assets/photos/cleat-and-ball.jpg",
   "kicker": "Gold Cup’s",
   "headline": ["Under-12", "Development", "Program"],
-  "tagline": "Is back!",
+  "sub": "Is back!",
   "pills": [
     { "icon": "calendar-days", "lines": ["Every Sunday, from", "Oct 18 - Nov 22"] },
     { "icon": "location-dot", "lines": ["Locations across", "Ontario"] },

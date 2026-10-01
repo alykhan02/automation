@@ -19,42 +19,62 @@
   .frame { position: relative; width: 1080px; height: 1080px; overflow: hidden;
            font-family: "Poppins", sans-serif; font-weight: 800; text-transform: uppercase; }
 
-  .photo-wrap { position: absolute; inset: 0; overflow: hidden; }
-  .photo { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .bg { position: absolute; inset: 0; overflow: hidden; }
+  .bg img, .bg svg { width: 100%; height: 100%; object-fit: cover; display: block; }
   .overlay { position: absolute; inset: 0; background: var(--photo-overlay); }
-
   .logo { position: absolute; left: 45px; top: 38px; width: 131px; }
 
-  /* text-box trim makes every line box exactly cap-height tall, so gaps below are cap-to-cap */
+  /* text-box trim makes every line box exactly cap-height tall, so margins below are cap-to-cap */
   .line { text-box: trim-both cap alphabetic; white-space: nowrap; }
 
-  .headline-zone { position: absolute; left: 0; right: 0; top: 110px;
-                   display: flex; flex-direction: column; align-items: center; justify-content: center; }
+  .stack { position: absolute; left: 0; right: 0; top: 110px;
+           display: flex; flex-direction: column; align-items: center; justify-content: center; }
+  .layout-callout .stack, .layout-countdown .stack { justify-content: flex-end; }
+
   .kicker  { color: var(--gold);  font-size: 62px; letter-spacing: 0.02em; }
+  .number  { color: var(--gold);  font-size: 330px; letter-spacing: -0.02em; }
   .head    { color: var(--white); font-size: 88px; letter-spacing: 0.02em; }
-  .tagline { color: var(--gold);  font-size: 60px; letter-spacing: 0.02em; }
-  .kicker + .head, .head + .tagline { margin-top: 37px; }
+  .sub     { color: var(--gold);  font-size: 60px; letter-spacing: 0.02em; }
+  .layout-callout .head { font-size: 103px; letter-spacing: 0.01em; }
+
+  .stack > * + * { margin-top: 37px; }
   .head + .head { margin-top: 13px; }
+  .sub + .sub { margin-top: 10px; }
+  .layout-callout .head + .head { margin-top: 14px; }
+  .layout-callout .head + .sub { margin-top: 40px; }
+  .number + .head { margin-top: 44px; }
+  .kicker + .number { margin-top: 60px; }
 
   .pills { position: absolute; left: 44px; bottom: 125px; display: flex; flex-direction: column; gap: 17px; }
   .pill { width: 601px; height: 118px; background: var(--white); border: 7px solid var(--gold);
           border-radius: 59px; display: flex; align-items: center; }
   .pill .icon { width: 72px; height: 66px; margin-left: 32px; flex: none; object-fit: contain; }
-  .pill .line { letter-spacing: 0.01em; }
   .pill .text { margin-left: 13px; color: var(--pill-text); font-size: 33px;
                 display: flex; flex-direction: column; align-items: flex-start; gap: 11px; }
+  .pill .line { letter-spacing: 0.01em; }
+
+  .button { position: absolute; left: 160px; top: 789px; width: 759px; height: 135px; background: var(--white);
+            border: 9px solid var(--gold); border-radius: 68px; display: flex; align-items: center; justify-content: center;
+            color: var(--pill-text); font-size: 35px; }
+  .button.has-icon { padding-right: 18px; }
+  .button .line { letter-spacing: 0.01em; }
+  .button .icon { position: absolute; right: -14px; bottom: -24px; width: 74px; height: 88px; }
 
   .brush { position: absolute; inset: 0; width: 100%; height: 100%; }
-
-  .cta .line { letter-spacing: 0.04em; }
   .cta { position: absolute; left: 687px; width: 400px; bottom: 42px; color: var(--white);
          font-size: 42px; display: flex; flex-direction: column; align-items: center; gap: 7px; }
+  .cta .line { letter-spacing: 0.04em; }
 </style>
 </head>
 <body>
 <div class="frame" id="frame"></div>
 <script>
-const LIMITS = { headWidth: 940, pillTextWidth: 445, ctaWidth: 360, zoneGapAbovePills: 21 };
+const LAYOUTS = {
+  info:      { head: 940, allowed: ['kicker', 'headline', 'sub', 'pills', 'cta'] },
+  callout:   { head: 960, allowed: ['kicker', 'headline', 'sub', 'button', 'cta'] },
+  countdown: { head: 940, allowed: ['kicker', 'number', 'headline', 'sub', 'pills', 'button', 'cta'] },
+};
+const LIMITS = { sub: 960, pillText: 445, button: 640, cta: 360, gapAbovePills: 21, gapAbovePillsAnchored: 55, gapAboveButton: 81 };
 
 function el(tag, cls, parent, text) {
   const n = document.createElement(tag);
@@ -80,69 +100,160 @@ function textWidth(node) {
 }
 
 function shrinkToWidth(nodes, max, warnings, label) {
+  if (!nodes.length) return;
   const widest = Math.max(...nodes.map(textWidth));
-  if (widest <= max) return 1;
+  if (widest <= max) return;
   const k = max / widest;
   for (const n of nodes) n.style.fontSize = parseFloat(getComputedStyle(n).fontSize) * k + 'px';
   if (k < 0.8) warnings.push(`${label} shrunk to ${Math.round(k * 100)}% to fit; consider shorter copy`);
-  return k;
+}
+
+const asList = v => (v == null ? [] : Array.isArray(v) ? v : [v]);
+
+// Drawn backgrounds, for posts without a suitable photo. Colours are bright on purpose:
+// the shared overlay pulls them into the same tone as the photos.
+const PATTERNS = {
+  pitch({ angle = -18, x = 50, y = 50, r = 235 } = {}) {
+    const cx = 10.8 * x, cy = 10.8 * y, band = 150, lines = 'stroke="#fff" stroke-width="10" fill="none" opacity="0.8"';
+    let stripes = '';
+    for (let i = -10; i < 10; i++) stripes += `<rect x="${cx + i * band}" y="${cy - 1500}" width="${band}" height="3000" fill="${i % 2 ? '#3f8f3c' : '#368034'}"/>`;
+    return `<svg viewBox="0 0 1080 1080" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <filter id="blades"><feTurbulence type="fractalNoise" baseFrequency="0.9 0.05" numOctaves="2" seed="7"/>
+          <feColorMatrix values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.35 0"/></filter>
+        <filter id="grain"><feTurbulence type="fractalNoise" baseFrequency="0.75" numOctaves="3" seed="2"/>
+          <feColorMatrix values="0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 0.12 0"/></filter>
+        <radialGradient id="vig" cx="50%" cy="45%" r="75%"><stop offset="55%" stop-opacity="0"/><stop offset="100%" stop-opacity="0.55"/></radialGradient>
+      </defs>
+      <g transform="rotate(${angle} ${cx} ${cy})">
+        ${stripes}
+        <rect x="${cx - 1500}" y="${cy - 1500}" width="3000" height="3000" filter="url(#blades)"/>
+        <line x1="${cx}" y1="${cy - 1500}" x2="${cx}" y2="${cy + 1500}" ${lines}/>
+        <circle cx="${cx}" cy="${cy}" r="${r}" ${lines}/>
+        <circle cx="${cx}" cy="${cy}" r="11" fill="#fff" opacity="0.8"/>
+      </g>
+      <rect width="1080" height="1080" filter="url(#grain)"/>
+      <rect width="1080" height="1080" fill="url(#vig)"/>
+    </svg>`;
+  },
+  net({ angle = 0, x = 50, y = 30 } = {}) {
+    const cell = 46;
+    return `<svg viewBox="0 0 1080 1080" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <radialGradient id="sky" cx="${x}%" cy="${y}%" r="85%"><stop offset="0%" stop-color="#cfe6c9"/><stop offset="35%" stop-color="#4f8a55"/><stop offset="100%" stop-color="#0f2a16"/></radialGradient>
+        <radialGradient id="glow" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#fff" stop-opacity="0.9"/><stop offset="100%" stop-color="#fff" stop-opacity="0"/></radialGradient>
+        <pattern id="mesh" width="${cell}" height="${cell}" patternUnits="userSpaceOnUse" patternTransform="rotate(${45 + angle})">
+          <path d="M0 0H${cell}M0 0V${cell}" stroke="#fff" stroke-width="3.2" fill="none"/>
+          <circle r="3.6" fill="#fff"/>
+        </pattern>
+        <filter id="soft"><feGaussianBlur stdDeviation="2.2"/></filter>
+        <linearGradient id="depth" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#fff"/><stop offset="100%" stop-color="#fff" stop-opacity="0.15"/></linearGradient>
+        <mask id="fade"><rect width="1080" height="1080" fill="url(#depth)"/></mask>
+        <filter id="grain"><feTurbulence type="fractalNoise" baseFrequency="0.75" numOctaves="3" seed="4"/>
+          <feColorMatrix values="0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 0.1 0"/></filter>
+      </defs>
+      <rect width="1080" height="1080" fill="url(#sky)"/>
+      <circle cx="${10.8 * x - 260}" cy="${10.8 * y - 120}" r="190" fill="url(#glow)"/>
+      <circle cx="${10.8 * x + 300}" cy="${10.8 * y - 160}" r="150" fill="url(#glow)"/>
+      <g mask="url(#fade)" opacity="0.75">
+        <rect x="-200" y="-200" width="1480" height="1480" fill="url(#mesh)" filter="url(#soft)"/>
+      </g>
+      <rect width="1080" height="1080" fill="url(#mesh)" opacity="0.35" mask="url(#fade)"/>
+      <rect width="1080" height="1080" filter="url(#grain)"/>
+    </svg>`;
+  },
+};
+
+async function renderBackground(frame, post, warnings) {
+  const bg = el('div', 'bg', frame);
+  if (post.pattern) {
+    const make = PATTERNS[post.pattern.type];
+    if (!make) warnings.push(`unknown pattern "${post.pattern.type}" (use ${Object.keys(PATTERNS).join(', ')})`);
+    else bg.innerHTML = make(post.pattern);
+    return;
+  }
+  const img = await loadImg(bg, '', post.photo, warnings);
+  // focus is given in on-screen terms, so mirror its x when the photo is flipped
+  let [fx, fy] = (post.photoFocus || '50% 50%').split(/\s+/).map(parseFloat);
+  if (post.photoFlip) { fx = 100 - fx; bg.style.transform = 'scaleX(-1)'; }
+  img.style.objectPosition = img.style.transformOrigin = `${fx}% ${fy}%`;
+  img.style.transform = `scale(${post.photoZoom || 1})`;
 }
 
 window.render = async function (post) {
   const warnings = [];
+  const layoutName = post.layout || 'info';
+  const layout = LAYOUTS[layoutName];
+  if (!layout) return [`unknown layout "${layoutName}" (use ${Object.keys(LAYOUTS).join(', ')})`];
+  for (const key of ['kicker', 'number', 'headline', 'sub', 'pills', 'button', 'cta'])
+    if (post[key] != null && !layout.allowed.includes(key)) warnings.push(`"${key}" is not used by the ${layoutName} layout`);
+
   const frame = document.getElementById('frame');
   frame.innerHTML = '';
-  const waits = [];
-
-  const photo = loadImg(el('div', 'photo-wrap', frame), 'photo', post.photo, warnings);
-  waits.push(photo.then(img => {
-    // focus is given in on-screen terms, so mirror its x when the photo is flipped
-    let [fx, fy] = (post.photoFocus || '50% 50%').split(/\s+/).map(parseFloat);
-    if (post.photoFlip) fx = 100 - fx;
-    img.style.objectPosition = img.style.transformOrigin = `${fx}% ${fy}%`;
-    img.style.transform = `scale(${post.photoZoom || 1})`;
-    if (post.photoFlip) frame.querySelector('.photo-wrap').style.transform = 'scaleX(-1)';
-  }));
+  frame.className = `frame layout-${layoutName}`;
+  const waits = [renderBackground(frame, post, warnings)];
   el('div', 'overlay', frame);
   waits.push(loadImg(frame, 'logo', 'assets/logo.png', warnings));
 
-  const zone = el('div', 'headline-zone', frame);
-  if (post.kicker) el('div', 'line kicker', zone, post.kicker);
-  const heads = (post.headline || []).map(t => el('div', 'line head', zone, t));
-  if (post.tagline) el('div', 'line tagline', zone, post.tagline);
+  const stack = el('div', 'stack', frame);
+  const use = key => layout.allowed.includes(key) && post[key] != null;
+  if (use('kicker')) el('div', 'line kicker', stack, post.kicker);
+  if (use('number')) el('div', 'line number', stack, post.number);
+  const heads = use('headline') ? asList(post.headline).map(t => el('div', 'line head', stack, t)) : [];
+  const subs = use('sub') ? asList(post.sub).map(t => el('div', 'line sub', stack, t)) : [];
 
-  const pills = el('div', 'pills', frame);
+  let bottomTop = 955, gap = LIMITS.gapAbovePills;
   const pillLines = [];
-  for (const p of post.pills || []) {
-    const pill = el('div', 'pill', pills);
-    waits.push(loadImg(pill, 'icon', `assets/icons/${p.icon}.svg`, warnings));
-    const text = el('div', 'text', pill);
-    for (const t of p.lines) pillLines.push(el('div', 'line', text, t));
+  if (use('pills')) {
+    const pills = el('div', 'pills', frame);
+    for (const p of post.pills) {
+      const pill = el('div', 'pill', pills);
+      waits.push(loadImg(pill, 'icon', `assets/icons/${p.icon}.svg`, warnings));
+      const text = el('div', 'text', pill);
+      for (const t of asList(p.lines)) pillLines.push(el('div', 'line', text, t));
+    }
+    if (post.pills.length > 3) warnings.push('more than 3 pills breaks the grid');
+    bottomTop = () => pills.getBoundingClientRect().top;
+    // info centres its text block; bottom-anchored layouts need the gap the centring would give
+    if (layoutName !== 'info') gap = LIMITS.gapAbovePillsAnchored;
   }
-  if ((post.pills || []).length > 3) warnings.push('more than 3 pills breaks the grid');
-
-  waits.push(loadImg(frame, 'brush', 'assets/brush.png', warnings));
-  const cta = el('div', 'cta', frame);
-  const ctaLines = (post.cta || []).map(t => el('div', 'line', cta, t));
+  let buttonText = [];
+  if (use('pills') && use('button')) warnings.push('use pills or a button, not both — they overlap');
+  else if (use('button')) {
+    const button = el('div', 'button', frame);
+    buttonText = [el('div', 'line', button, post.button.text)];
+    if (post.button.icon) {
+      button.classList.add('has-icon');
+      waits.push(loadImg(button, 'icon', `assets/icons/${post.button.icon}.svg`, warnings));
+    }
+    bottomTop = 789;
+    gap = LIMITS.gapAboveButton;
+  }
+  let ctaLines = [];
+  if (use('cta')) {
+    waits.push(loadImg(frame, 'brush', 'assets/brush.png', warnings));
+    const cta = el('div', 'cta', frame);
+    ctaLines = asList(post.cta).map(t => el('div', 'line', cta, t));
+  }
 
   await document.fonts.ready;
   await Promise.all(waits);
 
-  if (heads.length) shrinkToWidth(heads, LIMITS.headWidth, warnings, 'headline');
-  if (pillLines.length) shrinkToWidth(pillLines, LIMITS.pillTextWidth, warnings, 'pill text');
-  if (ctaLines.length) shrinkToWidth(ctaLines, LIMITS.ctaWidth, warnings, 'call to action');
+  shrinkToWidth(heads, layout.head, warnings, 'headline');
+  shrinkToWidth(subs, LIMITS.sub, warnings, 'gold subline');
+  shrinkToWidth(pillLines, LIMITS.pillText, warnings, 'pill text');
+  shrinkToWidth(buttonText, LIMITS.button, warnings, 'button text');
+  shrinkToWidth(ctaLines, LIMITS.cta, warnings, 'call to action');
 
-  const pillsTop = (post.pills || []).length ? pills.getBoundingClientRect().top : 955;
-  const zoneHeight = pillsTop - LIMITS.zoneGapAbovePills - 110;
-  zone.style.height = zoneHeight + 'px';
-  const blockHeight = [...zone.children].reduce((h, n) => {
-    const r = n.getBoundingClientRect();
-    return h + r.height + parseFloat(getComputedStyle(n).marginTop);
-  }, 0);
+  const zoneHeight = (typeof bottomTop === 'function' ? bottomTop() : bottomTop) - gap - 110;
+  stack.style.height = zoneHeight + 'px';
+  const blockHeight = [...stack.children].reduce((h, n) =>
+    h + n.getBoundingClientRect().height + parseFloat(getComputedStyle(n).marginTop), 0);
   if (blockHeight > zoneHeight) {
     const k = zoneHeight / blockHeight;
-    zone.style.transform = `scale(${k})`;
-    warnings.push(`headline block scaled to ${Math.round(k * 100)}% to fit above the pills`);
+    stack.style.transformOrigin = layoutName === 'info' ? 'center' : 'center bottom';
+    stack.style.transform = `scale(${k})`;
+    warnings.push(`text block scaled to ${Math.round(k * 100)}% to fit; consider fewer lines`);
   }
   return warnings;
 };

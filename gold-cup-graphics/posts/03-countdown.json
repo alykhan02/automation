@@ -1,0 +1,12 @@
+{
+  "layout": "countdown",
+  "pattern": { "type": "pitch", "angle": 90, "x": 50, "y": 38.7, "r": 168 },
+  "kicker": "Gold Cup U12 kicks off in",
+  "number": "3",
+  "headline": ["Days!"],
+  "pills": [
+    { "icon": "calendar-days", "lines": ["Sunday,", "October 18"] },
+    { "icon": "location-dot", "lines": ["4 locations across", "Ontario"] }
+  ],
+  "cta": ["See you", "on the field!"]
+}
