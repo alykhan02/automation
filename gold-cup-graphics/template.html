@@ -1,0 +1,151 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Gold Cup Post</title>
+<style>
+  @font-face { font-family: "Poppins"; font-weight: 800; src: url("assets/fonts/poppins-800.woff2") format("woff2"); }
+
+  :root {
+    --gold: #CFA833;
+    --pill-text: #002A1A;
+    --white: #FFFFFF;
+    --photo-overlay: rgba(11, 54, 26, 0.63);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { width: 1080px; height: 1080px; overflow: hidden; background: #0B361A; }
+
+  .frame { position: relative; width: 1080px; height: 1080px; overflow: hidden;
+           font-family: "Poppins", sans-serif; font-weight: 800; text-transform: uppercase; }
+
+  .photo-wrap { position: absolute; inset: 0; overflow: hidden; }
+  .photo { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .overlay { position: absolute; inset: 0; background: var(--photo-overlay); }
+
+  .logo { position: absolute; left: 45px; top: 38px; width: 131px; }
+
+  /* text-box trim makes every line box exactly cap-height tall, so gaps below are cap-to-cap */
+  .line { text-box: trim-both cap alphabetic; white-space: nowrap; }
+
+  .headline-zone { position: absolute; left: 0; right: 0; top: 110px;
+                   display: flex; flex-direction: column; align-items: center; justify-content: center; }
+  .kicker  { color: var(--gold);  font-size: 62px; letter-spacing: 0.02em; }
+  .head    { color: var(--white); font-size: 88px; letter-spacing: 0.02em; }
+  .tagline { color: var(--gold);  font-size: 60px; letter-spacing: 0.02em; }
+  .kicker + .head, .head + .tagline { margin-top: 37px; }
+  .head + .head { margin-top: 13px; }
+
+  .pills { position: absolute; left: 44px; bottom: 125px; display: flex; flex-direction: column; gap: 17px; }
+  .pill { width: 601px; height: 118px; background: var(--white); border: 7px solid var(--gold);
+          border-radius: 59px; display: flex; align-items: center; }
+  .pill .icon { width: 72px; height: 66px; margin-left: 32px; flex: none; object-fit: contain; }
+  .pill .line { letter-spacing: 0.01em; }
+  .pill .text { margin-left: 13px; color: var(--pill-text); font-size: 33px;
+                display: flex; flex-direction: column; align-items: flex-start; gap: 11px; }
+
+  .brush { position: absolute; inset: 0; width: 100%; height: 100%; }
+
+  .cta .line { letter-spacing: 0.04em; }
+  .cta { position: absolute; left: 687px; width: 400px; bottom: 42px; color: var(--white);
+         font-size: 42px; display: flex; flex-direction: column; align-items: center; gap: 7px; }
+</style>
+</head>
+<body>
+<div class="frame" id="frame"></div>
+<script>
+const LIMITS = { headWidth: 940, pillTextWidth: 445, ctaWidth: 360, zoneGapAbovePills: 21 };
+
+function el(tag, cls, parent, text) {
+  const n = document.createElement(tag);
+  if (cls) n.className = cls;
+  if (text != null) n.textContent = text;
+  parent.appendChild(n);
+  return n;
+}
+
+function loadImg(parent, cls, src, warnings) {
+  const img = el('img', cls, parent);
+  return new Promise(resolve => {
+    img.onload = () => resolve(img);
+    img.onerror = () => { warnings.push(`could not load ${src}`); img.style.visibility = 'hidden'; resolve(img); };
+    img.src = src;
+  });
+}
+
+function textWidth(node) {
+  const range = document.createRange();
+  range.selectNodeContents(node);
+  return range.getBoundingClientRect().width;
+}
+
+function shrinkToWidth(nodes, max, warnings, label) {
+  const widest = Math.max(...nodes.map(textWidth));
+  if (widest <= max) return 1;
+  const k = max / widest;
+  for (const n of nodes) n.style.fontSize = parseFloat(getComputedStyle(n).fontSize) * k + 'px';
+  if (k < 0.8) warnings.push(`${label} shrunk to ${Math.round(k * 100)}% to fit; consider shorter copy`);
+  return k;
+}
+
+window.render = async function (post) {
+  const warnings = [];
+  const frame = document.getElementById('frame');
+  frame.innerHTML = '';
+  const waits = [];
+
+  const photo = loadImg(el('div', 'photo-wrap', frame), 'photo', post.photo, warnings);
+  waits.push(photo.then(img => {
+    // focus is given in on-screen terms, so mirror its x when the photo is flipped
+    let [fx, fy] = (post.photoFocus || '50% 50%').split(/\s+/).map(parseFloat);
+    if (post.photoFlip) fx = 100 - fx;
+    img.style.objectPosition = img.style.transformOrigin = `${fx}% ${fy}%`;
+    img.style.transform = `scale(${post.photoZoom || 1})`;
+    if (post.photoFlip) frame.querySelector('.photo-wrap').style.transform = 'scaleX(-1)';
+  }));
+  el('div', 'overlay', frame);
+  waits.push(loadImg(frame, 'logo', 'assets/logo.png', warnings));
+
+  const zone = el('div', 'headline-zone', frame);
+  if (post.kicker) el('div', 'line kicker', zone, post.kicker);
+  const heads = (post.headline || []).map(t => el('div', 'line head', zone, t));
+  if (post.tagline) el('div', 'line tagline', zone, post.tagline);
+
+  const pills = el('div', 'pills', frame);
+  const pillLines = [];
+  for (const p of post.pills || []) {
+    const pill = el('div', 'pill', pills);
+    waits.push(loadImg(pill, 'icon', `assets/icons/${p.icon}.svg`, warnings));
+    const text = el('div', 'text', pill);
+    for (const t of p.lines) pillLines.push(el('div', 'line', text, t));
+  }
+  if ((post.pills || []).length > 3) warnings.push('more than 3 pills breaks the grid');
+
+  waits.push(loadImg(frame, 'brush', 'assets/brush.png', warnings));
+  const cta = el('div', 'cta', frame);
+  const ctaLines = (post.cta || []).map(t => el('div', 'line', cta, t));
+
+  await document.fonts.ready;
+  await Promise.all(waits);
+
+  if (heads.length) shrinkToWidth(heads, LIMITS.headWidth, warnings, 'headline');
+  if (pillLines.length) shrinkToWidth(pillLines, LIMITS.pillTextWidth, warnings, 'pill text');
+  if (ctaLines.length) shrinkToWidth(ctaLines, LIMITS.ctaWidth, warnings, 'call to action');
+
+  const pillsTop = (post.pills || []).length ? pills.getBoundingClientRect().top : 955;
+  const zoneHeight = pillsTop - LIMITS.zoneGapAbovePills - 110;
+  zone.style.height = zoneHeight + 'px';
+  const blockHeight = [...zone.children].reduce((h, n) => {
+    const r = n.getBoundingClientRect();
+    return h + r.height + parseFloat(getComputedStyle(n).marginTop);
+  }, 0);
+  if (blockHeight > zoneHeight) {
+    const k = zoneHeight / blockHeight;
+    zone.style.transform = `scale(${k})`;
+    warnings.push(`headline block scaled to ${Math.round(k * 100)}% to fit above the pills`);
+  }
+  return warnings;
+};
+</script>
+</body>
+</html>

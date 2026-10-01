@@ -1,0 +1,13 @@
+{
+  "photo": "assets/photos/cleat-and-ball.jpg",
+  "photoFlip": true,
+  "kicker": "Gold Cup U12",
+  "headline": ["Volunteers", "Wanted"],
+  "tagline": "Join our team!",
+  "pills": [
+    { "icon": "calendar-days", "lines": ["Weekly sessions from", "Oct 17/18 - Nov 22"] },
+    { "icon": "location-dot", "lines": ["4 locations across", "Ontario"] },
+    { "icon": "people-group", "lines": ["Site leads, coaches", "& site volunteers"] }
+  ],
+  "cta": ["Sign up via", "link in bio!"]
+}
