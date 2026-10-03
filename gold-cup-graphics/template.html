@@ -178,6 +178,13 @@ async function renderBackground(frame, post, warnings) {
   if (post.photoFlip) { fx = 100 - fx; bg.style.transform = 'scaleX(-1)'; }
   img.style.objectPosition = img.style.transformOrigin = `${fx}% ${fy}%`;
   img.style.transform = `scale(${post.photoZoom || 1})`;
+  if (img.naturalWidth) {
+    // pixels the photo must supply per output pixel; above 1 means it gets upscaled and looks soft
+    const upscale = Math.max(1080 / img.naturalWidth, 1080 / img.naturalHeight) * (post.photoZoom || 1) * devicePixelRatio;
+    if (upscale > 1.02)
+      warnings.push(`${post.photo} is ${img.naturalWidth}×${img.naturalHeight}, too small for this crop ` +
+        `(needs ${Math.ceil(upscale * Math.min(img.naturalWidth, img.naturalHeight))}px on its short side) — it will look soft`);
+  }
 }
 
 window.render = async function (post) {

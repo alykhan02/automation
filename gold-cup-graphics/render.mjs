@@ -7,14 +7,17 @@ const root = path.dirname(fileURLToPath(import.meta.url));
 const postsDir = path.join(root, 'posts');
 const outDir = path.join(root, 'out');
 
+// --scale 2 renders 2160×2160 (for print or retina); Instagram itself shows posts at 1080×1080
 const args = process.argv.slice(2);
+const scaleAt = args.indexOf('--scale');
+const scale = scaleAt === -1 ? 1 : Number(args.splice(scaleAt, 2)[1]);
 const files = args.length
   ? args.map(f => path.resolve(f))
   : (await readdir(postsDir)).filter(f => f.endsWith('.json')).sort().map(f => path.join(postsDir, f));
 
 await mkdir(outDir, { recursive: true });
 const browser = await chromium.launch();
-const page = await browser.newPage({ viewport: { width: 1080, height: 1080 } });
+const page = await browser.newPage({ viewport: { width: 1080, height: 1080 }, deviceScaleFactor: scale });
 
 for (const file of files) {
   const post = JSON.parse(await readFile(file, 'utf8'));

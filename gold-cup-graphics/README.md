@@ -11,7 +11,9 @@ the calibration check: if a change to `template.html` makes them drift from the 
 1. Copy a file in `posts/` that has the layout you want, then edit the text.
 2. `npm install` (first time only), then `npm run render` — PNGs land in `out/`.
    Render one file with `node render.mjs posts/my-post.json`.
-3. Read the warnings it prints. "Shrunk to N%" means the copy is too long; shorten it rather than accept tiny text.
+   `node render.mjs --scale 2` renders at 2160×2160 instead (Instagram itself displays 1080×1080).
+3. Read the warnings it prints. A "too small for this crop" warning means the photo would be upscaled and look soft:
+   use a bigger photo or less `photoZoom`. "Shrunk to N%" means the copy is too long; shorten it rather than accept tiny text.
 
 ## Layouts
 
